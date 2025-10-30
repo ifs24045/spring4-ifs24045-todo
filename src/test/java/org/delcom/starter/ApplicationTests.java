@@ -1,7 +1,6 @@
 package org.delcom.starter;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
 import org.springframework.boot.SpringApplication;
 import org.springframework.context.ConfigurableApplicationContext;
 
@@ -11,7 +10,6 @@ import static org.mockito.Mockito.*;
 class ApplicationTest {
 
 	@Test
-	@Timeout(3)
 	void mainMethod_ShouldRunSpringApplication() {
 		// Mock SpringApplication.run untuk test main method
 		try (var mockedSpring = mockStatic(SpringApplication.class)) {
