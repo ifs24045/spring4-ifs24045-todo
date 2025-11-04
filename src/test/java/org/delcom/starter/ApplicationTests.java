@@ -51,5 +51,3 @@ class ApplicationTest {
 		});
 	}
 }
-
-//aku Thimoty
