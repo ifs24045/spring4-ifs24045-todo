@@ -9,7 +9,6 @@ import org.springframework.http.ResponseEntity;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 // pastikan Locale di-import jika belum
-import java.util.Locale; 
 
 import static org.junit.jupiter.api.Assertions.*;
 
