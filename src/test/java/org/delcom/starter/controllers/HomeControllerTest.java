@@ -1,433 +1,426 @@
 package org.delcom.starter.controllers;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-
-import java.nio.charset.StandardCharsets;
-import java.util.Base64;
-// pastikan Locale di-import jika belum
-import java.util.Locale; 
-
+import org.junit.jupiter.api.BeforeEach;
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Unit Test class for HomeController.
- * <p>
- * Kelas ini memverifikasi kebenaran semua endpoint controller dengan menyediakan
- * berbagai input yang valid, tidak valid, dan edge-case.
- * Tes ini diperbarui untuk menangani ResponseEntity dan HttpStatus code.
- */
+import java.util.Base64;
+
 class HomeControllerTest {
 
     private HomeController controller;
 
+    // Fungsi bantu encode string ke Base64
+    private String encode(String text) {
+        return Base64.getEncoder().encodeToString(text.getBytes());
+    }
+
+    // @BeforeEach memastikan controller baru dibuat sebelum SETIAP tes
     @BeforeEach
     void setUp() {
         controller = new HomeController();
     }
 
-    private String encodeBase64(String text) {
-        return Base64.getEncoder().encodeToString(text.getBytes(StandardCharsets.UTF_8));
-    }
-
-    // --- Tes Asli (TIDAK DIUBAH) ---
-
     @Test
     @DisplayName("Mengembalikan pesan selamat datang yang benar")
     void hello_ShouldReturnWelcomeMessage() {
+        // Arrange
+        HomeController controller = new HomeController();
+
+        // Act
         String result = controller.hello();
+
+        // Assert
         assertEquals("Hay Abdullah, selamat datang di pengembangan aplikasi dengan Spring Boot!", result);
     }
 
+    // Tambahan test untuk metode sayHello dengan parameter nama
     @Test
     @DisplayName("Mengembalikan pesan sapaan yang dipersonalisasi")
-    void helloWithName_ShouldReturnPersonalizedGreeting() {
+    void helloWithName_ShouldReturnPersonalizedGreeting() throws Exception {
+        // Arrange
+        HomeController controller = new HomeController();
+
+        // Act
         String result = controller.sayHello("Abdullah");
+
+        // Assert
         assertEquals("Hello, Abdullah!", result);
     }
 
-    // --- Tes untuk informasiNim ---
+    // Test untuk method informasiNim()
+    // ========================================
+    //       case "11S": jurusan = "Sarjana Informatika"; break;
 
-    @Test
-    @DisplayName("informasiNim - NIM Valid (11S)")
-    void informasiNim_Valid() {
-        String nim = "11S24001";
-        String expected = """
-                Inforamsi NIM 11S24001:\s
-                >> Program Studi: Sarjana Informatika
-                >> Angkatan: 2024
-                >> Urutan: 1""";
+    // Test untuk informasiNIM Sarjana Informatika
+     @Test
+    @DisplayName("Mengembalikan informasi nim Sarjana Informatika")
+    void informasiNim_mengembalikanInformasiNimS1IF() throws Exception {
+        // Arrange
+        HomeController controller = new HomeController();
 
-        ResponseEntity<String> response = controller.informasiNim(nim);
+        // Act
+        String result = controller.informasiNim("11S24045");
 
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertEquals(expected, response.getBody());
+        // Assert
+        assertEquals("Informasi NIM 11S24045: >> Program Studi: Sarjana Informatika >> Angkatan: 2024 >> Urutan: 45", result);
     }
 
-    @Test
-    @DisplayName("informasiNim - NIM Panjang Tidak Valid")
-    void informasiNim_InvalidLength() {
-        String nim = "11S24";
-        String expected = "Format NIM tidak valid. Harap masukkan 8 digit.";
-        ResponseEntity<String> response = controller.informasiNim(nim);
-        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
-        assertEquals(expected, response.getBody());
-    }
+     @Test
+    @DisplayName("Mengembalikan informasi nim Sarjana Sistem Informasi")
+    void informasiNim_mengembalikanInformasiNimS1SI() throws Exception {
+        // Arrange
+        HomeController controller = new HomeController();
 
-    @Test
-    @DisplayName("informasiNim - Prefix NIM Tidak Dikenal")
-    void informasiNim_InvalidPrefix() {
-        String nim = "99S24001";
-        String expected = "Prefix NIM '99S' tidak ditemukan.";
-        ResponseEntity<String> response = controller.informasiNim(nim);
-        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
-        assertEquals(expected, response.getBody());
-    }
+        // Act
+        String result = controller.informasiNim("12S24045");
 
-    @Test
-    @DisplayName("informasiNim - Input Parse Error (Memicu Catch)")
-    void informasiNim_InvalidParse() {
-        String nim = "11SXX001";
-        ResponseEntity<String> response = controller.informasiNim(nim);
-        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
-        assertTrue(response.getBody().contains("For input string: \"XX\""));
-    }
-
-    // --- Tes untuk perolehanNilai ---
-
-    @Test
-    @DisplayName("perolehanNilai - Skenario Kalkulasi Lengkap (Grade A)")
-    void perolehanNilai_FullScenario() {
-        String input = String.join("\n",
-                "10 15 10 15 20 30",
-                "PA|100|80", "T|100|90", "K|100|85", "P|100|95", "UTS|100|75", "UAS|100|88", "---"
-        );
-        String base64Input = encodeBase64(input);
-
-        String expected = """
-                Perolehan Nilai:
-                >> Partisipatif: 80/100 (8.00/10)
-                >> Tugas: 90/100 (13.50/15)
-                >> Kuis: 85/100 (8.50/10)
-                >> Proyek: 95/100 (14.25/15)
-                >> UTS: 75/100 (15.00/20)
-                >> UAS: 88/100 (26.40/30)
-
-                >> Nilai Akhir: 85.65
-                >> Grade: A""";
-
-        ResponseEntity<String> response = controller.perolehanNilai(base64Input);
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertEquals(expected, response.getBody());
-    }
-
-    @Test
-    @DisplayName("perolehanNilai - Skenario Grade AB")
-    void perolehanNilai_GradeAB() {
-        String input = String.join("\n", "10 15 10 15 20 30", "PA|100|75", "T|100|75", "K|100|75", "P|100|75", "UTS|100|75", "UAS|100|75", "---");
-        String base64Input = encodeBase64(input);
-        ResponseEntity<String> response = controller.perolehanNilai(base64Input);
-        String result = response.getBody();
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertTrue(result.contains(">> Nilai Akhir: 75.00"));
-        assertTrue(result.contains(">> Grade: AB"));
-    }
-
-    @Test
-    @DisplayName("perolehanNilai - Skenario Grade B")
-    void perolehanNilai_GradeB() {
-        String input = String.join("\n", "10 15 10 15 20 30", "PA|100|65", "T|100|65", "K|100|65", "P|100|65", "UTS|100|65", "UAS|100|65", "---");
-        String base64Input = encodeBase64(input);
-        ResponseEntity<String> response = controller.perolehanNilai(base64Input);
-        String result = response.getBody();
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertTrue(result.contains(">> Nilai Akhir: 65.00"));
-        assertTrue(result.contains(">> Grade: B"));
+        // Assert
+        assertEquals("Informasi NIM 12S24045: >> Program Studi: Sarjana Sistem Informasi >> Angkatan: 2024 >> Urutan: 45", result);
     }
     
     @Test
-    @DisplayName("perolehanNilai - Skenario Grade BC")
-    void perolehanNilai_GradeBC() {
-        String input = String.join("\n", "10 15 10 15 20 30", "PA|100|60", "T|100|60", "K|100|60", "P|100|60", "UTS|100|60", "UAS|100|60", "---");
-        String base64Input = encodeBase64(input);
-        ResponseEntity<String> response = controller.perolehanNilai(base64Input);
-        String result = response.getBody();
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertTrue(result.contains(">> Nilai Akhir: 60.00"));
-        assertTrue(result.contains(">> Grade: BC"));
+    @DisplayName("Mengembalikan informasi nim Sarjana Teknik Elektro")
+    void informasiNim_mengembalikanInformasiNimS1TE() throws Exception {
+        // Arrange
+        HomeController controller = new HomeController();
+
+        // Act
+        String result = controller.informasiNim("14S24045");
+
+        // Assert
+        assertEquals("Informasi NIM 14S24045: >> Program Studi: Sarjana Teknik Elektro >> Angkatan: 2024 >> Urutan: 45", result);
+    }
+
+     @Test
+    @DisplayName("Mengembalikan informasi nim Manajemen Rekayasa")
+    void informasiNim_mengembalikanInformasiNimS1MR() throws Exception {
+        // Arrange
+        HomeController controller = new HomeController();
+
+        // Act
+        String result = controller.informasiNim("21S24045");
+
+        // Assert
+        assertEquals("Informasi NIM 21S24045: >> Program Studi: Sarjana Manajemen Rekayasa >> Angkatan: 2024 >> Urutan: 45", result);
     }
 
     @Test
-    @DisplayName("perolehanNilai - Skenario Grade C")
-    void perolehanNilai_GradeC() {
-        String input = String.join("\n", "10 15 10 15 20 30", "PA|100|50", "T|100|50", "K|100|50", "P|100|50", "UTS|100|50", "UAS|100|50", "---");
-        String base64Input = encodeBase64(input);
-        ResponseEntity<String> response = controller.perolehanNilai(base64Input);
-        String result = response.getBody();
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertTrue(result.contains(">> Nilai Akhir: 50.00"));
-        assertTrue(result.contains(">> Grade: C"));
+    @DisplayName("Mengembalikan informasi nim Teknik Metalurgi")
+    void informasiNim_mengembalikanInformasiNimS1TM() throws Exception {
+        // Arrange
+        HomeController controller = new HomeController();
+
+        // Act
+        String result = controller.informasiNim("22S24045");
+
+        // Assert
+        assertEquals("Informasi NIM 22S24045: >> Program Studi: Sarjana Teknik Metalurgi >> Angkatan: 2024 >> Urutan: 45", result);
     }
 
     @Test
-    @DisplayName("perolehanNilai - Skenario Grade D")
-    void perolehanNilai_GradeD() {
-        String input = String.join("\n", "10 15 10 15 20 30", "PA|100|40", "T|100|40", "K|100|40", "P|100|40", "UTS|100|40", "UAS|100|40", "---");
-        String base64Input = encodeBase64(input);
-        ResponseEntity<String> response = controller.perolehanNilai(base64Input);
-        String result = response.getBody();
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertTrue(result.contains(">> Nilai Akhir: 40.00"));
-        assertTrue(result.contains(">> Grade: D"));
+    @DisplayName("Mengembalikan informasi nim Sarjana Teknik Bioproses")
+    void informasiNim_mengembalikanInformasiNimS1TB() throws Exception {
+        // Arrange
+        HomeController controller = new HomeController();
+
+        // Act
+        String result = controller.informasiNim("31S24045");
+
+        // Assert
+        assertEquals("Informasi NIM 31S24045: >> Program Studi: Sarjana Teknik Bioproses >> Angkatan: 2024 >> Urutan: 45", result);
     }
 
     @Test
-    @DisplayName("perolehanNilai - Skenario Grade E")
-    void perolehanNilai_GradeE() {
-        String input = String.join("\n", "10 15 10 15 20 30", "PA|100|30", "T|100|30", "K|100|30", "P|100|30", "UTS|100|30", "UAS|100|30", "---");
-        String base64Input = encodeBase64(input);
-        ResponseEntity<String> response = controller.perolehanNilai(base64Input);
-        String result = response.getBody();
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertTrue(result.contains(">> Nilai Akhir: 30.00"));
-        assertTrue(result.contains(">> Grade: E"));
+    @DisplayName("Mengembalikan informasi nim Diploma 4 Teknologi Rekayasa Perangkat Lunak")
+    void informasiNim_mengembalikanInformasiNimD4TRPL() throws Exception {
+        // Arrange
+        HomeController controller = new HomeController();
+
+        // Act
+        String result = controller.informasiNim("11424045");
+
+        // Assert
+        assertEquals("Informasi NIM 11424045: >> Program Studi: Diploma 4 Teknologi Rekayasa Perangkat Lunak >> Angkatan: 2024 >> Urutan: 45", result);
+    } 
+
+    @Test
+    @DisplayName("Mengembalikan informasi nim Diploma 3 Teknologi Informasi")
+    void informasiNim_mengembalikanInformasiNimD3TI() throws Exception {
+        // Arrange
+        HomeController controller = new HomeController();
+
+        // Act
+        String result = controller.informasiNim("11324045");
+
+        // Assert
+        assertEquals("Informasi NIM 11324045: >> Program Studi: Diploma 3 Teknologi Informasi >> Angkatan: 2024 >> Urutan: 45", result);
+    } 
+
+    @Test
+    @DisplayName("Mengembalikan informasi nim Diploma 3 Teknologi Komputer")
+    void informasiNim_mengembalikanInformasiNimD3TK() throws Exception {
+        // Arrange
+        HomeController controller = new HomeController();
+
+        // Act
+        String result = controller.informasiNim("13324045");
+
+        // Assert
+        assertEquals("Informasi NIM 13324045: >> Program Studi: Diploma 3 Teknologi Komputer >> Angkatan: 2024 >> Urutan: 45", result);
+    } 
+
+    @Test
+    @DisplayName("Mengembalikan informasi nim NIM tidak sesuai format")
+    void informasiNim_mengembalikanInformasiNimXX() throws Exception {
+        // Arrange
+        HomeController controller = new HomeController();
+
+        // Act
+        String result = controller.informasiNim("1xx24045");
+
+        // Assert
+        assertEquals("Prefix 1xx tidak dikenali", result);
+    } 
+
+    @Test
+    @DisplayName("Mengembalikan informasi nim NIM tidak sesuai format")
+    void informasiNim_mengembalikanInformasiNim4() throws Exception {
+        // Arrange
+        HomeController controller = new HomeController();
+
+        // Act
+        String result = controller.informasiNim("12S24");
+
+        // Assert
+        assertEquals("NIM tidak sesuai format!", result);
+ 
+    }
+   
+@Test
+    @DisplayName("Perolehan nilai - Menghitung data untuk Grade A")
+    void testPerolehanNilai_DataLengkap_GradeA() {
+        String input = "Partisipatif|100\nTugas|100\nKuis|80\nProyek|90\nUTS|85\nUAS|85";
+        String base64Input = encode(input);
+
+        String result = controller.perolehanNilai(base64Input);
+
+        assertTrue(result.contains("Nilai Akhir: 89.00"));
+        assertTrue(result.contains("Grade: A"));
     }
 
     @Test
-    @DisplayName("perolehanNilai - Skenario Input Jarang (Sparse)")
-    void perolehanNilai_SparseInput() {
-        String input = String.join("\n", "10 15 10 15 20 30", "T|100|90", "UTS|100|50", "---");
-        String base64Input = encodeBase64(input);
-        ResponseEntity<String> response = controller.perolehanNilai(base64Input);
-        String result = response.getBody();
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertTrue(result.contains(">> Partisipatif: 0/100 (0.00/10)"));
-        assertTrue(result.contains(">> Kuis: 0/100 (0.00/10)"));
-        assertTrue(result.contains(">> Nilai Akhir: 23.50"));
-        assertTrue(result.contains(">> Grade: E"));
+    @DisplayName("Perolehan nilai - Menghitung data lengkap (Grade B)")
+    void testPerolehanNilai_DataLengkap_GradeB() {
+        String input = "Partisipatif|80\nTugas|90\nKuis|85\nProyek|70\nUTS|75\nUAS|88";
+        String base64Input = encode(input);
+
+        String result = controller.perolehanNilai(base64Input);
+
+        assertTrue(result.contains("Nilai Akhir: 81.90"));
+        assertTrue(result.contains("Grade: B"));
     }
 
     @Test
-    @DisplayName("perolehanNilai - Skenario Simbol Tidak Valid")
-    void perolehanNilai_InvalidSymbol() {
-        String input = String.join("\n", "10 15 10 15 20 30", "PA|100|80", "XYZ|100|100", "---");
-        String base64Input = encodeBase64(input);
-        ResponseEntity<String> response = controller.perolehanNilai(base64Input);
-        String result = response.getBody();
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertTrue(result.contains(">> Nilai Akhir: 8.00"));
-    }
+    @DisplayName("Perolehan nilai - Menghitung data untuk Grade C")
+    void testPerolehanNilai_GradeC() {
+        String input = "Partisipatif|60\nTugas|60\nKuis|60\nProyek|60\nUTS|60\nUAS|60";
+        String base64Input = encode(input);
 
-    // --- PERBAIKAN UNTUK COVERAGE (Garis kuning di `while`) ---
-    @Test
-    @DisplayName("perolehanNilai - Skenario Input Data Kosong (Hanya Bobot)")
-    void perolehanNilai_InputDataKosong() {
-        // Tes ini menguji 'while' loop dilewati (evaluasi 'false' di awal)
-        // Input "...\n" (dengan newline) adalah valid dan akan skip loop
-        String input = "10 15 10 15 20 30\n"; 
-        String base64Input = encodeBase64(input);
-        
-        ResponseEntity<String> response = controller.perolehanNilai(base64Input);
-        String result = response.getBody();
+        String result = controller.perolehanNilai(base64Input);
 
-        // Tes ini SEHARUSNYA 200 OK
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertTrue(result.contains(">> Nilai Akhir: 0.00"));
-        assertTrue(result.contains(">> Grade: E"));
+        assertTrue(result.contains("Nilai Akhir: 60.00"));
+        assertTrue(result.contains("Grade: C"));
     }
 
     @Test
-    @DisplayName("perolehanNilai - Input Malformed (Memicu Catch Block)")
-    void perolehanNilai_InvalidInput() {
-        String base64Input = encodeBase64("halo"); // Gagal di scanner.nextInt()
-        String expectedError = "Format data input tidak valid atau tidak lengkap. Pastikan angka dan format sudah benar.";
-        ResponseEntity<String> response = controller.perolehanNilai(base64Input);
-        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
-        assertEquals(expectedError, response.getBody());
+    @DisplayName("Perolehan nilai - Menghitung data untuk Grade D")
+    void testPerolehanNilai_GradeD() {
+        String input = "Partisipatif|100\nTugas|100\nUTS|40\nUAS|40"; // Hanya kategori tertentu
+        String base64Input = encode(input);
+
+        String result = controller.perolehanNilai(base64Input);
+
+        assertTrue(result.contains("Nilai Akhir: 45.00"));
+        assertTrue(result.contains("Grade: D"));
     }
 
     @Test
-    @DisplayName("perolehanNilai - Input Base64 Tidak Valid")
-    void perolehanNilai_InvalidBase64() {
-        String invalidBase64 = "!!INVALID!!";
-        String expectedError = "Input Base64 tidak valid.";
-        ResponseEntity<String> response = controller.perolehanNilai(invalidBase64);
-        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
-        assertTrue(response.getBody().startsWith(expectedError));
+    @DisplayName("Perolehan nilai - Data tidak lengkap (Grade E)")
+    void testPerolehanNilai_DataTidakLengkap_GradeE() {
+        String input = "UTS|70\nUAS|60"; // Hanya 2 kategori
+        String base64Input = encode(input);
+
+        String result = controller.perolehanNilai(base64Input);
+
+        assertTrue(result.contains("Nilai Akhir: 32.00"));
+        assertTrue(result.contains("Grade: E"));
     }
-
-
-    // --- Tes untuk perbedaanL ---
 
     @Test
-    @DisplayName("perbedaanL - Matriks 3x3 (Ganjil, Dominan=Tengah)")
-    void perbedaanL_Matrix3x3() {
-        String input = String.join("\n", "3", "1 2 3", "4 5 6", "7 8 9");
-        String base64Input = encodeBase64(input);
-        String expected = """
-                Nilai L: 20:
-                Nilai Kebalikan L: 20
-                Nilai Tengah: 5
-                Perbedaan: 0
-                Dominan: 5""";
-        ResponseEntity<String> response = controller.perbedaanL(base64Input);
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertEquals(expected, response.getBody());
+    @DisplayName("Perolehan nilai - Memicu NumberFormatException (catch merah)")
+    void testPerolehanNilai_NumberFormatException() {
+        String input = "Partisipatif|100\nTugas|abc\nUAS|50"; // Tugas tidak valid
+        String base64Input = encode(input);
+
+        String result = controller.perolehanNilai(base64Input);
+
+        assertTrue(result.contains("Nilai Akhir: 25.00"));
     }
+
+    @Test
+    @DisplayName("Perolehan nilai - Base64 tidak valid")
+    void testPerolehanNilai_Base64TidakValid() {
+        String invalidBase64 = "MTIz*"; // Karakter tidak valid di Base64
+
+        String result = controller.perolehanNilai(invalidBase64);
+
+        assertTrue(result.contains("Nilai Akhir: 0.00"));
+        assertTrue(result.contains("Grade: E"));
+    }
+
+    @Test
+    @DisplayName("Perolehan nilai - Mengabaikan kategori yang tidak dikenal (Perbaikan Kuning)")
+    void testPerolehanNilai_InvalidKategoriName() {
+        String input = "Partisipatif|100\nNilaiExtra|100\nUAS|50"; // NilaiExtra diabaikan
+        String base64Input = encode(input);
+
+        String result = controller.perolehanNilai(base64Input);
+
+        assertTrue(result.contains("Nilai Akhir: 25.00"));
+        assertTrue(result.contains("Grade: E"));
+    }
+
+    @Test
+    @DisplayName("Perolehan nilai - Mengabaikan format baris yang salah (Perbaikan Kuning)")
+    void testPerolehanNilai_InvalidLineFormat() {
+        String input = "Partisipatif|100\nIni baris yang salah\nUAS|50|tambahan"; // Format tidak valid
+        String base64Input = encode(input);
+
+        String result = controller.perolehanNilai(base64Input);
+
+        assertTrue(result.contains("Nilai Akhir: 10.00"));
+        assertTrue(result.contains("Grade: E"));
+    }
+
+    // Test untuk metode perbedaanL()
     
     @Test
-    @DisplayName("perbedaanL - Matriks 4x4 (Genap, Dominan=L)")
-    void perbedaanL_Matrix4x4() {
-        String input = String.join("\n", "4", "1 2 3 4", "5 6 7 8", "9 10 11 12", "13 14 15 16");
-        String base64Input = encodeBase64(input);
-        String expected = """
-                Nilai L: 57:
-                Nilai Kebalikan L: 45
-                Nilai Tengah: 34
-                Perbedaan: 12
-                Dominan: 57""";
-        ResponseEntity<String> response = controller.perbedaanL(base64Input);
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertEquals(expected, response.getBody());
-    }
-
-    @Test
-    @DisplayName("perbedaanL - Matriks 1x1 (Edge Case)")
-    void perbedaanL_Matrix1x1() {
-        String base64Input = encodeBase64("1\n42");
-        String expected = """
-                Nilai L: Tidak Ada
-                Nilai Kebalikan L: Tidak Ada
-                Nilai Tengah: 42
-                Perbedaan: Tidak Ada
-                Dominan: 42""";
-        ResponseEntity<String> response = controller.perbedaanL(base64Input);
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertEquals(expected, response.getBody());
-    }
-
-    @Test
-    @DisplayName("perbedaanL - Matriks 2x2 (Edge Case)")
-    void perbedaanL_Matrix2x2() {
-        String base64Input = encodeBase64("2\n1 2\n3 4");
-        String expected = """
-                Nilai L: Tidak Ada
-                Nilai Kebalikan L: Tidak Ada
-                Nilai Tengah: 10
-                Perbedaan: Tidak Ada
-                Dominan: 10""";
-        ResponseEntity<String> response = controller.perbedaanL(base64Input);
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertEquals(expected, response.getBody());
-    }
-
-    @Test
-    @DisplayName("perbedaanL - Input Data Malformed (Memicu Catch)")
-    void perbedaanL_InvalidInputData() {
-        String base64Input = encodeBase64("abc");
-        String expectedError = "Format data matriks tidak valid atau tidak lengkap.";
-        ResponseEntity<String> response = controller.perbedaanL(base64Input);
-        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
-        assertEquals(expectedError, response.getBody());
-    }
-
-    @Test
-    @DisplayName("perbedaanL - Input Base64 Tidak Valid")
-    void perbedaanL_InvalidBase64() {
-        String invalidBase64 = "!!INVALID!!";
-        String expectedError = "Input Base64 tidak valid.";
-        ResponseEntity<String> response = controller.perbedaanL(invalidBase64);
+    @DisplayName("perbedaanL - Input valid sesuai screenshot")
+    void testPerbedaanL_ValidInput() {
+        String input = "20|20|5";
+        String base64Input = encode(input);
+        String result = controller.perbedaanL(base64Input);
         
-        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
-        assertTrue(response.getBody().startsWith(expectedError));
-    }
-
-    // --- Tes untuk palingTer ---
-
-    @Test
-    @DisplayName("palingTer - Skenario Dasar")
-    void palingTer_BasicScenario() {
-        String base64Input = encodeBase64("10 5 8 10 9 5 10 8 7");
-        String expected = """
-                Tertinggi: 10
-                Terendah: 5
-                Terbanyak: 10 (3x)
-                Tersedikit: 9 (1x)
-                Jumlah Tertinggi: 10 * 3 = 30
-                Jumlah Terendah: 5 * 2 = 10""";
-        ResponseEntity<String> response = controller.palingTer(base64Input);
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertEquals(expected, response.getBody());
+        // Memeriksa bagian-bagian dari output yang diharapkan
+        assertTrue(result.contains("Nilai L: 20"));
+        assertTrue(result.contains("Nilai Kebalikan L: 20"));
+        assertTrue(result.contains("Nilai Tengah: 5"));
+        assertTrue(result.contains("Perbedaan: 0"));
+        assertTrue(result.contains("Dominan: 5"));
     }
 
     @Test
-    @DisplayName("palingTer - Input Kosong (Edge Case)")
-    void palingTer_EmptyInput() {
-        String base64Input = encodeBase64(""); // Input kosong
-        String expected = "Tidak ada input";
-        ResponseEntity<String> response = controller.palingTer(base64Input);
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertEquals(expected, response.getBody());
+    @DisplayName("perbedaanL - Format input salah (bukan 3 bagian)")
+    void testPerbedaanL_InvalidFormat() {
+        String input = "20|20"; // Hanya 2 bagian
+        String base64Input = encode(input);
+        String result = controller.perbedaanL(base64Input);
+        assertEquals("Error: Format input tidak valid. Harusnya 'angka1|angka2|angka3'.", result);
     }
 
     @Test
-    @DisplayName("palingTer - Tidak Ada Angka Unik (Edge Case)")
-    void palingTer_NoUniqueNumber() {
-        String base64Input = encodeBase64("10 20 10 20");
-        String expected = "Tidak ada angka unik";
-        ResponseEntity<String> response = controller.palingTer(base64Input);
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertEquals(expected, response.getBody());
+    @DisplayName("perbedaanL - Input bukan angka (NumberFormatException)")
+    void testPerbedaanL_NotANumber() {
+        String input = "20|abc|5"; // 'abc' bukan angka
+        String base64Input = encode(input);
+        String result = controller.perbedaanL(base64Input);
+        assertEquals("Error: Input bukan angka yang valid.", result);
     }
 
     @Test
-    @DisplayName("palingTer - Skenario Tie-Breaker Jumlah Tertinggi (Wins)")
-    void palingTer_JumlahTertinggiTieBreak_Wins() {
-        // Tes ini menguji (prod == jtProd && v > jtVal) -> TRUE
-        String base64Input = encodeBase64("10 20 10 9"); 
-        ResponseEntity<String> response = controller.palingTer(base64Input);
-        String result = response.getBody();
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertTrue(result.contains("Jumlah Tertinggi: 20 * 1 = 20")); // 20 menang
-        assertTrue(result.contains("Tersedikit: 9 (1x)"));
+    @DisplayName("perbedaanL - Base64 tidak valid (IllegalArgumentException)")
+    void testPerbedaanL_InvalidBase64() {
+        String invalidBase64 = "MTIz*"; // Base64 rusak
+        String result = controller.perbedaanL(invalidBase64);
+        assertEquals("Error: Format Base64 tidak valid.", result);
     }
 
-   // --- TES BARU UNTUK COVERAGE (Garis kuning tie-break) ---
-    @Test
-    @DisplayName("palingTer - Skenario Tie-Breaker Jumlah Tertinggi (Loses)")
-    void palingTer_JumlahTertinggiTieBreak_Loses() {
-        String base64Input = encodeBase64("20 10 10 9"); 
-        ResponseEntity<String> response = controller.palingTer(base64Input);
-        String result = response.getBody();
 
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertTrue(result.contains("Jumlah Tertinggi: 20 * 1 = 20"));
+    @Test
+    @DisplayName("Paling Ter - Input valid sesuai screenshot")
+    void testPalingTer_ValidInput() {
+        String input = """
+            10
+            5
+            9
+            10
+            5
+            10
+            """;
+
         
-        // --- PERBAIKAN ---
-        // 'tersedikit' untuk input ini adalah 20, bukan 9.
-        assertTrue(result.contains("Tersedikit: 20 (1x)")); 
+        String base64Input = encode(input);
+        String result = controller.palingTer(base64Input);
+        
+        String expected = "Tertinggi: 10 Terendah: 5 Terbanyak: 10 (3x) Tersedikit: 9 (1x) Jumlah Tertinggi: 10 * 3 = 30 Jumlah Terendah: 5 * 2 = 10";
+        assertEquals(expected, result);
     }
 
     @Test
-    @DisplayName("palingTer - Input Teks (Bukan Angka)")
-    void palingTer_TextInput() {
-        String base64Input = encodeBase64("abc");
-        String expected = "Tidak ada input";
-        ResponseEntity<String> response = controller.palingTer(base64Input);
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertEquals(expected, response.getBody());
+    @DisplayName("Paling Ter - Tidak ada angka valid")
+    void testPalingTer_NoValidNumbers() {
+        String input = "abc\ndef\nghi";
+        String base64Input = encode(input);
+        String result = controller.palingTer(base64Input);
+        assertEquals("Tidak ada angka yang valid ditemukan.", result);
     }
 
     @Test
-    @DisplayName("palingTer - Input Base64 Tidak Valid (Memicu Catch)")
-    void palingTer_InvalidBase64() {
-        String invalidBase64 = "!!INVALID!!";
-        String expectedError = "Input Base64 tidak valid.";
-        ResponseEntity<String> response = controller.palingTer(invalidBase64);
-        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
-        assertTrue(response.getBody().startsWith(expectedError));
+    @DisplayName("Paling Ter - Base64 tidak valid")
+    void testPalingTer_InvalidBase64() {
+        String invalidBase64 = "MTIz*"; // Base64 rusak
+        String result = controller.palingTer(invalidBase64);
+        assertEquals("Error: Format Base64 tidak valid.", result);
+    }
+
+    @Test
+    @DisplayName("Paling Ter - Input dengan angka negatif")
+    void testPalingTer_WithNegativeNumbers() {
+        String input = """
+            -10
+            5
+            -10
+            -5
+            5
+            -10
+            """;
+
+        
+        String base64Input = encode(input);
+        String result = controller.palingTer(base64Input);
+        
+// BENAR:
+String expected = "Tertinggi: 5 Terendah: -10 Terbanyak: -10 (3x) Tersedikit: -5 (1x) Jumlah Tertinggi: 5 * 3 = 15 Jumlah Terendah: -10 * 3 = -30";
+    }
+
+    @Test
+    @DisplayName("Paling Ter - Input dengan frekuensi yang sama")
+    void testPalingTer_SameFrequency() {
+        String input = """
+            10
+            5
+            10
+            5
+            """;
+   
+        
+        String base64Input = encode(input);
+        String result = controller.palingTer(base64Input);
+        
+        // Tes ini memaksa 'if (currentCount < tersedikitCount)' menjadi false
+        String expected = "Tertinggi: 10 Terendah: 5 Terbanyak: 10 (2x) Tersedikit: 10 (2x) Jumlah Tertinggi: 10 * 2 = 20 Jumlah Terendah: 5 * 2 = 10";
+        assertEquals(expected, result);
     }
 }
